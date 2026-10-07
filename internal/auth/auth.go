@@ -155,7 +155,7 @@ func Login(ctx context.Context, conf *oauth2.Config, openBrowser func(string) er
 	}
 }
 
-func openBrowser(url string) error {
+func OpenBrowser(url string) error {
 	var cmd *exec.Cmd
 
 	switch runtime.GOOS {

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/SteliosSpanos/spotd/internal/events"
 	"github.com/SteliosSpanos/spotd/internal/spotify"
 )
 
@@ -21,28 +22,10 @@ type PlayStore interface {
 }
 
 type Publisher interface {
-	Publish(Event)
+	Publish(events.Event)
 }
 
-type NowPlaying struct {
-	TrackID    string
-	IsPlaying  bool
-	ProgressMs int
-	DurationMs int
-	FetchedAt  time.Time
-}
-
-type HistoryUpdated struct {
-	New int64 // How many new tracks were just saved to the database
-}
-
-// When published, it will contain either NowPlaying or HistoryUpdated
-type Event struct {
-	NowPlaying     *NowPlaying
-	HistoryUpdated *HistoryUpdated
-}
-
-func changed(a, b *NowPlaying, interval time.Duration) bool {
+func changed(a, b *events.NowPlaying) bool {
 	if (a == nil) != (b == nil) {
 		return true
 	}
@@ -97,7 +80,7 @@ func New(api SpotifyAPI, store PlayStore, pub Publisher, l *slog.Logger) *Poller
 }
 
 func (p *Poller) RunFast(ctx context.Context) error {
-	var last *NowPlaying
+	var last *events.NowPlaying
 	t := time.NewTicker(p.fastEvery)
 	defer t.Stop()
 
@@ -111,7 +94,7 @@ func (p *Poller) RunFast(ctx context.Context) error {
 			// Transient errors must not kill the daemon, the client already retried
 			p.log.Warn("poll currently-playing", "err", err)
 		case changed(last, cur, p.fastEvery):
-			p.pub.Publish(Event{NowPlaying: cur})
+			p.pub.Publish(events.Event{NowPlaying: cur})
 			last = cur
 		default:
 			last = cur
@@ -125,7 +108,7 @@ func (p *Poller) RunFast(ctx context.Context) error {
 	}
 }
 
-func (p *Poller) fetchNowPlaying(ctx context.Context) (*NowPlaying, error) {
+func (p *Poller) fetchNowPlaying(ctx context.Context) (*events.NowPlaying, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -142,7 +125,7 @@ func (p *Poller) fetchNowPlaying(ctx context.Context) (*NowPlaying, error) {
 }
 
 // toNowPlaying returns nil when there is no item (e.g. an ad), which is treated as nothing playing
-func toNowPlaying(pl *spotify.Playing, fetchedAt time.Time) *NowPlaying {
+func toNowPlaying(pl *spotify.Playing, fetchedAt time.Time) *events.NowPlaying {
 	if pl == nil || pl.Item == nil {
 		return nil
 	}
@@ -153,7 +136,7 @@ func toNowPlaying(pl *spotify.Playing, fetchedAt time.Time) *NowPlaying {
 		id = pl.Item.URI
 	}
 
-	return &NowPlaying{
+	return &events.NowPlaying{
 		TrackID:    id,
 		IsPlaying:  pl.IsPlaying,
 		ProgressMs: pl.ProgressMs,
@@ -188,7 +171,7 @@ func (p *Poller) ingest(ctx context.Context) error {
 		return err
 	}
 
-	// Ask spotify to give us all songs played after this timestamp 
+	// Ask spotify to give us all songs played after this timestamp
 	items, err := p.api.RecentlyPlayed(ctx, cursor)
 	if err != nil {
 		return err
@@ -200,11 +183,11 @@ func (p *Poller) ingest(ctx context.Context) error {
 		return err
 	}
 
-	// If we found new songs, tell the app so it can update its stats 
+	// If we found new songs, tell the app so it can update its stats
 	if inserted > 0 {
 		p.log.Info("ingested plays", "new", inserted)
-		p.pub.Publish(Event{HistoryUpdated: &HistoryUpdated{New: inserted}})
+		p.pub.Publish(events.Event{HistoryUpdated: &events.HistoryUpdated{New: inserted}})
 	}
 
-return nil
+	return nil
 }
