@@ -93,7 +93,7 @@ func (p *Poller) RunFast(ctx context.Context) error {
 		case err != nil:
 			// Transient errors must not kill the daemon, the client already retried
 			p.log.Warn("poll currently-playing", "err", err)
-		case changed(last, cur, p.fastEvery):
+		case changed(last, cur):
 			p.pub.Publish(events.Event{NowPlaying: cur})
 			last = cur
 		default:
@@ -136,12 +136,20 @@ func toNowPlaying(pl *spotify.Playing, fetchedAt time.Time) *events.NowPlaying {
 		id = pl.Item.URI
 	}
 
+	artists := make([]string, 0, len(pl.Item.Artists))
+	for _, a := range pl.Item.Artists {
+		artists = append(artists, a.Name)
+	}
+
 	return &events.NowPlaying{
-		TrackID:    id,
-		IsPlaying:  pl.IsPlaying,
+		TrackID: id,
+		Title: pl.Item.Name,
+		Artists: artists,
+		Album: pl.Item.Album.Name,
+		IsPlaying: pl.IsPlaying,
 		ProgressMs: pl.ProgressMs,
 		DurationMs: pl.Item.DurationMs,
-		FetchedAt:  fetchedAt,
+		FetchedAt fetchedAt,
 	}
 }
 

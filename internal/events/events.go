@@ -4,7 +4,10 @@ import "time"
 
 type NowPlaying struct {
 	TrackID    string
+	Title string
 	IsPlaying  bool
+	Artists []string
+	Album string
 	ProgressMs int
 	DurationMs int
 	FetchedAt  time.Time
@@ -15,6 +18,7 @@ type HistoryUpdated struct {
 }
 
 // When published, it will contain either NowPlaying or HistoryUpdated
+// Both nil means playback stopped
 type Event struct {
 	NowPlaying     *NowPlaying
 	HistoryUpdated *HistoryUpdated
