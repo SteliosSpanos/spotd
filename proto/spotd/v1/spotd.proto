@@ -1,0 +1,174 @@
+syntax = "proto3";
+
+package spotd.v1;
+
+import "google/protobuf/timestamp.proto";
+
+service PlayerService {
+  rpc Play(PlayRequest) returns (PlayResponse);
+  rpc Pause(PauseRequest) returns (PauseResponse);
+  rpc Next(NextRequest) returns (NextResponse);
+  rpc Queue(QueueRequest) returns (QueueResponse);
+  rpc WatchEvents(WatchEventsRequest) returns (stream WatchEventsResponse);
+}
+
+service StatsService {
+  rpc TopArtists(TopArtistsRequest) returns (TopArtistsResponse);
+  rpc TopTracks(TopTracksRequest) returns (TopTracksResponse);
+  rpc ListeningByDay(ListeningByDayRequest) returns (ListeningByDayResponse);
+}
+
+service PlaylistService {
+  rpc ListPlaylists(ListPlaylistsRequest) returns (ListPlaylistsResponse);
+  rpc StartJob(StartJobRequest) returns (StartJobResponse);
+  rpc WatchJob(WatchJobRequest) returns (WatchJobResponse);
+  rpc CancelJob(CancelJobRequest) returns (CancelJobResponse);
+}
+
+message PlayRequest {
+  string uri = 1;
+}
+
+message PlayResponse {}
+message PauseRequest {}
+message PauseResponse {}
+message NextRequest {}
+message NextResponse {}
+
+message QueueRequest {
+  string uri = 1;
+}
+
+message QueueResponse {}
+message WatchEventsRequest {}
+
+message WatchEventsResponse {
+  oneof event {
+    NowPlaying now_playing = 1;
+    Stopped stopped = 2;
+    HistoryUpdated history_updated = 3;
+  }
+}
+
+message NowPlaying {
+  string track_id = 1;
+  string title = 2;
+  repeated string artists = 3;
+  string album = 4;
+  bool is_playing = 5;
+  int64 progress_ms = 6;
+  int64 duration_ms = 7;
+  google.protobuf.Timestamp fetched_at = 8;
+}
+
+message Stopped {}
+
+message HistoryUpdated {
+  int64 new_plays = 1;
+}
+
+enum TimeRange {
+  TIME_RANGE_UNSPECIFIED = 0;
+  TIME_RANGE_LAST_7_DAYS = 1;
+  TIME_RANGE_LAST_30_DAYS = 2;
+  TIME_RANGE_ALL_TIME = 3;
+}
+
+message TopArtistsRequest {
+  TimeRange range = 1;
+  int32 limit = 2;
+}
+
+message TopArtistsResponse {
+  repeated ArtistCount artists = 1;
+}
+
+message ArtistCount {
+  string id = 1;
+  string name = 2;
+  int64 plays = 3;
+}
+
+message TopTracksRequest {
+  TimeRange range = 1;
+  int32 limit = 2;
+}
+
+message TopTracksResponse {
+  repeated TrackCount tracks = 1;
+}
+
+message TrackCount {
+  string id = 1;
+  string title = 2;
+  repeated string artists = 3;
+  string album = 4;
+  int64 plays = 5;
+}
+
+message ListeningByDayRequest {
+  TimeRange range = 1;
+}
+
+message ListeningByDayResponse {
+  repeated DayCount days = 1;
+}
+
+message DayCount {
+  string date = 1;
+  int64 plays = 2;
+  int64 listened_ms = 3;
+}
+
+message ListPlaylistsRequest {}
+
+message ListPlaylistsResponse {
+  string id = 1;
+  string name = 2;
+  int32 track_count = 3;
+}
+
+enum JobKind {
+  JOB_KIND_UNSPECIFIED = 0;
+  JOB_KIND_DEDUPE = 1;
+  JOB_KIND_SORT = 2;
+  JOB_KIND_BACKUP = 3;
+  JOB_KIND_RESTORE = 4;
+}
+
+enum JobState {
+  JOB_STATE_UNSPECIFIED = 0;
+  JOB_STATE_PENDING = 1;
+  JOB_STATE_RUNNING = 2;
+  JOB_STATE_SUCCEEDED = 3;
+  JOB_STATE_FAILED = 4;
+  JOB_STATE_CANCELED = 5;
+}
+
+message StartJobRequest {
+  JobKind kind = 1;
+  string playlist_id = 2;
+}
+
+message StartJobResponse {
+  string job_id = 1;
+}
+
+message WatchJobRequest {
+  string job_id = 1;
+}
+
+message WatchJobResponse {
+  string job_id = 1;
+  JobState state = 2;
+  int32 done = 3;
+  int32 total = 4;
+  string message = 5;
+  string error = 6;
+}
+
+message CancelJobRequest {
+  string job_id = 1;
+}
+
+message CancelJobResponse {}
