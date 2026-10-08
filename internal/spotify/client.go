@@ -18,6 +18,7 @@ import (
 	"log/slog"
 	"math/rand/v2"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -82,6 +83,25 @@ func (e *APIError) Error() string {
 
 var ErrNoContent = errors.New("no content")
 
+// If the error is just 204 No Content then it's just Spotify telling us that the request was successfull
+func ignoreNoContent(err error) error {
+	if errors.Is(err, ErrNoContent) {
+		return nil
+	}
+
+	return err
+}
+
+// Play resumes playback when uri is empty, otherwise it starts the track
+func (c *Client) Play(ctx context.Context, uri string) error {
+	var body any 
+	if uri != "" {
+		body = map[string][]string{"uris:" {uri}}
+	}
+
+	return ignoreNoContent(c.do(ctx, http.MethodPut, "/me/player/play", body, nil, true))
+}
+
 // PUT is "idempotent" (sending it as many times has the same affect as sending it once)
 func (c *Client) Pause(ctx context.Context) error {
 	return c.do(ctx, http.MethodPut, "/me/player/pause", nil, nil, true)
@@ -89,6 +109,12 @@ func (c *Client) Pause(ctx context.Context) error {
 
 func (c *Client) Next(ctx context.Context) error {
 	return c.do(ctx, http.MethodPost, "/me/player/next", nil, nil, false)
+}
+
+// Queue appends a track to the queue
+// POST is not idempotent: a retry could queue the track twice
+func (c *Client) Queue(ctx context.Context, uri string) error {
+	return ignoreNoContent(c.do(ctx, http.MethodPost, "/me/player/queue?uri="+url.QueryEscape(uri), nil, nil, false))
 }
 
 // Performs a request with retries
