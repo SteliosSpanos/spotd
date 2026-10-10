@@ -12,11 +12,12 @@ import (
 
 type Store struct {
 	w *sql.DB
-	q *db.Queries
+	q *db.Queries // Runs on the single writer connection
+	r *db.Queries // Runs on the read-only pool, used by stats queries
 }
 
 func New(d *DB) *Store {
-	return &Store{w: d.W, q: db.New(d.W)}
+	return &Store{w: d.W, q: db.New(d.W), r: db.New(d.R)}
 }
 
 func (s *Store) LatestPlayedAt(ctx context.Context) (time.Time, error) {
@@ -74,7 +75,7 @@ func (s *Store) InsertPlays(ctx context.Context, items []spotify.PlayHistory) (i
 			return 0, fmt.Errorf("upsert track %s: %w", trackID, err)
 		}
 
-		// Delete old artist links for this track 
+		// Delete old artist links for this track
 		// The links must mirror the latest artist list, so drop stale ones first
 		if err := q.DeleteTrackArtists(ctx, trackID); err != nil {
 			return 0, fmt.Errorf("delete track artists %s: %w", trackID, err)

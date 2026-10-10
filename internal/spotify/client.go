@@ -94,9 +94,9 @@ func ignoreNoContent(err error) error {
 
 // Play resumes playback when uri is empty, otherwise it starts the track
 func (c *Client) Play(ctx context.Context, uri string) error {
-	var body any 
+	var body any
 	if uri != "" {
-		body = map[string][]string{"uris:" {uri}}
+		body = map[string][]string{"uris": {uri}}
 	}
 
 	return ignoreNoContent(c.do(ctx, http.MethodPut, "/me/player/play", body, nil, true))

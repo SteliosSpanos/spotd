@@ -142,14 +142,14 @@ func toNowPlaying(pl *spotify.Playing, fetchedAt time.Time) *events.NowPlaying {
 	}
 
 	return &events.NowPlaying{
-		TrackID: id,
-		Title: pl.Item.Name,
-		Artists: artists,
-		Album: pl.Item.Album.Name,
-		IsPlaying: pl.IsPlaying,
+		TrackID:    id,
+		Title:      pl.Item.Name,
+		Artists:    artists,
+		Album:      pl.Item.Album.Name,
+		IsPlaying:  pl.IsPlaying,
 		ProgressMs: pl.ProgressMs,
 		DurationMs: pl.Item.DurationMs,
-		FetchedAt fetchedAt,
+		FetchedAt:  fetchedAt,
 	}
 }
 

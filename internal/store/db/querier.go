@@ -12,6 +12,11 @@ type Querier interface {
 	DeleteTrackArtists(ctx context.Context, trackID string) error
 	InsertPlay(ctx context.Context, arg InsertPlayParams) (int64, error)
 	LatestPlayedAt(ctx context.Context) (int64, error)
+	ListeningByDay(ctx context.Context, fromMs int64) ([]ListeningByDayRow, error)
+	// Every artist credited on a track gets the play, not only the primary one
+	TopArtists(ctx context.Context, arg TopArtistsParams) ([]TopArtistsRow, error)
+	TopTracks(ctx context.Context, arg TopTracksParams) ([]TopTracksRow, error)
+	TrackArtistsNames(ctx context.Context, trackID string) ([]string, error)
 	UpsertArtist(ctx context.Context, arg UpsertArtistParams) error
 	UpsertTrack(ctx context.Context, arg UpsertTrackParams) error
 	UpsertTrackArtist(ctx context.Context, arg UpsertTrackArtistParams) error

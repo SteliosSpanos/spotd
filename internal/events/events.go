@@ -4,10 +4,10 @@ import "time"
 
 type NowPlaying struct {
 	TrackID    string
-	Title string
+	Title      string
 	IsPlaying  bool
-	Artists []string
-	Album string
+	Artists    []string
+	Album      string
 	ProgressMs int
 	DurationMs int
 	FetchedAt  time.Time
