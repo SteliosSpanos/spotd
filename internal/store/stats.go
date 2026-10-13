@@ -68,3 +68,17 @@ func (s *Store) TopTracks(ctx context.Context, since time.Time, limit int) ([]Tr
 
 	return out, nil
 }
+
+func (s *Store) ListeningByDay(ctx context.Context, since time.Time) ([]DayCount, error) {
+	rows, err := s.r.ListeningByDay(ctx, sinceMs(since))
+	if err != nil {
+		return nil, fmt.Errorf("listening by day: %w", err)
+	}
+
+	out := make([]DayCount, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, DayCount{Date: r.Day, Plays: r.Plays, ListenedMs: r.ListenedMs})
+	}
+
+	return out, nil
+}
