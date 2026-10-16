@@ -1,0 +1,27 @@
+# Binaries
+/spotd
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+
+# Coverage
+coverage.*
+*.coverprofile
+
+# Local SQLite databases and sockets
+*.db
+*.db-shm
+*.db-wal
+*.sock
+
+# Environment / secrets
+.env
+.env.*
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
