@@ -11,7 +11,7 @@ import (
 
 const listeningByDay = `-- name: ListeningByDay :many
 SELECT 
-  CAST(date(p.played_at_ms / 1000, "unixepoch", "localtime") AS TEXT) AS day,
+  CAST(date(p.played_at_ms / 1000, 'unixepoch', 'localtime') AS TEXT) AS day,
   COUNT(*) AS plays,
   CAST(COALESCE(SUM(t.duration_ms), 0) AS INTEGER) AS listened_ms
 FROM plays p 

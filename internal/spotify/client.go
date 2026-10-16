@@ -104,11 +104,11 @@ func (c *Client) Play(ctx context.Context, uri string) error {
 
 // PUT is "idempotent" (sending it as many times has the same affect as sending it once)
 func (c *Client) Pause(ctx context.Context) error {
-	return c.do(ctx, http.MethodPut, "/me/player/pause", nil, nil, true)
+	return ignoreNoContent(c.do(ctx, http.MethodPut, "/me/player/pause", nil, nil, true))
 }
 
 func (c *Client) Next(ctx context.Context) error {
-	return c.do(ctx, http.MethodPost, "/me/player/next", nil, nil, false)
+	return ignoreNoContent(c.do(ctx, http.MethodPost, "/me/player/next", nil, nil, false))
 }
 
 // Queue appends a track to the queue
