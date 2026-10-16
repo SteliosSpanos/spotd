@@ -21,7 +21,7 @@ service StatsService {
 service PlaylistService {
   rpc ListPlaylists(ListPlaylistsRequest) returns (ListPlaylistsResponse);
   rpc StartJob(StartJobRequest) returns (StartJobResponse);
-  rpc WatchJob(WatchJobRequest) returns (WatchJobResponse);
+  rpc WatchJob(WatchJobRequest) returns (stream WatchJobResponse);
   rpc CancelJob(CancelJobRequest) returns (CancelJobResponse);
 }
 
@@ -123,6 +123,10 @@ message DayCount {
 message ListPlaylistsRequest {}
 
 message ListPlaylistsResponse {
+  repeated Playlist playlists = 1;
+}
+
+message Playlist {
   string id = 1;
   string name = 2;
   int32 track_count = 3;

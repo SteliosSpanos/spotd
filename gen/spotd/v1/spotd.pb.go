@@ -1319,9 +1319,7 @@ func (*ListPlaylistsRequest) Descriptor() ([]byte, []int) {
 
 type ListPlaylistsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	TrackCount    int32                  `protobuf:"varint,3,opt,name=track_count,json=trackCount,proto3" json:"track_count,omitempty"`
+	Playlists     []*Playlist            `protobuf:"bytes,1,rep,name=playlists,proto3" json:"playlists,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1356,21 +1354,67 @@ func (*ListPlaylistsResponse) Descriptor() ([]byte, []int) {
 	return file_spotd_v1_spotd_proto_rawDescGZIP(), []int{23}
 }
 
-func (x *ListPlaylistsResponse) GetId() string {
+func (x *ListPlaylistsResponse) GetPlaylists() []*Playlist {
+	if x != nil {
+		return x.Playlists
+	}
+	return nil
+}
+
+type Playlist struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	TrackCount    int32                  `protobuf:"varint,3,opt,name=track_count,json=trackCount,proto3" json:"track_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Playlist) Reset() {
+	*x = Playlist{}
+	mi := &file_spotd_v1_spotd_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Playlist) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Playlist) ProtoMessage() {}
+
+func (x *Playlist) ProtoReflect() protoreflect.Message {
+	mi := &file_spotd_v1_spotd_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Playlist.ProtoReflect.Descriptor instead.
+func (*Playlist) Descriptor() ([]byte, []int) {
+	return file_spotd_v1_spotd_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *Playlist) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *ListPlaylistsResponse) GetName() string {
+func (x *Playlist) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-func (x *ListPlaylistsResponse) GetTrackCount() int32 {
+func (x *Playlist) GetTrackCount() int32 {
 	if x != nil {
 		return x.TrackCount
 	}
@@ -1387,7 +1431,7 @@ type StartJobRequest struct {
 
 func (x *StartJobRequest) Reset() {
 	*x = StartJobRequest{}
-	mi := &file_spotd_v1_spotd_proto_msgTypes[24]
+	mi := &file_spotd_v1_spotd_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1399,7 +1443,7 @@ func (x *StartJobRequest) String() string {
 func (*StartJobRequest) ProtoMessage() {}
 
 func (x *StartJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_spotd_v1_spotd_proto_msgTypes[24]
+	mi := &file_spotd_v1_spotd_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1412,7 +1456,7 @@ func (x *StartJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartJobRequest.ProtoReflect.Descriptor instead.
 func (*StartJobRequest) Descriptor() ([]byte, []int) {
-	return file_spotd_v1_spotd_proto_rawDescGZIP(), []int{24}
+	return file_spotd_v1_spotd_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *StartJobRequest) GetKind() JobKind {
@@ -1438,7 +1482,7 @@ type StartJobResponse struct {
 
 func (x *StartJobResponse) Reset() {
 	*x = StartJobResponse{}
-	mi := &file_spotd_v1_spotd_proto_msgTypes[25]
+	mi := &file_spotd_v1_spotd_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1450,7 +1494,7 @@ func (x *StartJobResponse) String() string {
 func (*StartJobResponse) ProtoMessage() {}
 
 func (x *StartJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_spotd_v1_spotd_proto_msgTypes[25]
+	mi := &file_spotd_v1_spotd_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1463,7 +1507,7 @@ func (x *StartJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartJobResponse.ProtoReflect.Descriptor instead.
 func (*StartJobResponse) Descriptor() ([]byte, []int) {
-	return file_spotd_v1_spotd_proto_rawDescGZIP(), []int{25}
+	return file_spotd_v1_spotd_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *StartJobResponse) GetJobId() string {
@@ -1482,7 +1526,7 @@ type WatchJobRequest struct {
 
 func (x *WatchJobRequest) Reset() {
 	*x = WatchJobRequest{}
-	mi := &file_spotd_v1_spotd_proto_msgTypes[26]
+	mi := &file_spotd_v1_spotd_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1494,7 +1538,7 @@ func (x *WatchJobRequest) String() string {
 func (*WatchJobRequest) ProtoMessage() {}
 
 func (x *WatchJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_spotd_v1_spotd_proto_msgTypes[26]
+	mi := &file_spotd_v1_spotd_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1507,7 +1551,7 @@ func (x *WatchJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchJobRequest.ProtoReflect.Descriptor instead.
 func (*WatchJobRequest) Descriptor() ([]byte, []int) {
-	return file_spotd_v1_spotd_proto_rawDescGZIP(), []int{26}
+	return file_spotd_v1_spotd_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *WatchJobRequest) GetJobId() string {
@@ -1531,7 +1575,7 @@ type WatchJobResponse struct {
 
 func (x *WatchJobResponse) Reset() {
 	*x = WatchJobResponse{}
-	mi := &file_spotd_v1_spotd_proto_msgTypes[27]
+	mi := &file_spotd_v1_spotd_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1543,7 +1587,7 @@ func (x *WatchJobResponse) String() string {
 func (*WatchJobResponse) ProtoMessage() {}
 
 func (x *WatchJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_spotd_v1_spotd_proto_msgTypes[27]
+	mi := &file_spotd_v1_spotd_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1556,7 +1600,7 @@ func (x *WatchJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchJobResponse.ProtoReflect.Descriptor instead.
 func (*WatchJobResponse) Descriptor() ([]byte, []int) {
-	return file_spotd_v1_spotd_proto_rawDescGZIP(), []int{27}
+	return file_spotd_v1_spotd_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *WatchJobResponse) GetJobId() string {
@@ -1610,7 +1654,7 @@ type CancelJobRequest struct {
 
 func (x *CancelJobRequest) Reset() {
 	*x = CancelJobRequest{}
-	mi := &file_spotd_v1_spotd_proto_msgTypes[28]
+	mi := &file_spotd_v1_spotd_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1622,7 +1666,7 @@ func (x *CancelJobRequest) String() string {
 func (*CancelJobRequest) ProtoMessage() {}
 
 func (x *CancelJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_spotd_v1_spotd_proto_msgTypes[28]
+	mi := &file_spotd_v1_spotd_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1635,7 +1679,7 @@ func (x *CancelJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelJobRequest.ProtoReflect.Descriptor instead.
 func (*CancelJobRequest) Descriptor() ([]byte, []int) {
-	return file_spotd_v1_spotd_proto_rawDescGZIP(), []int{28}
+	return file_spotd_v1_spotd_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *CancelJobRequest) GetJobId() string {
@@ -1653,7 +1697,7 @@ type CancelJobResponse struct {
 
 func (x *CancelJobResponse) Reset() {
 	*x = CancelJobResponse{}
-	mi := &file_spotd_v1_spotd_proto_msgTypes[29]
+	mi := &file_spotd_v1_spotd_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1665,7 +1709,7 @@ func (x *CancelJobResponse) String() string {
 func (*CancelJobResponse) ProtoMessage() {}
 
 func (x *CancelJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_spotd_v1_spotd_proto_msgTypes[29]
+	mi := &file_spotd_v1_spotd_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1678,7 +1722,7 @@ func (x *CancelJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelJobResponse.ProtoReflect.Descriptor instead.
 func (*CancelJobResponse) Descriptor() ([]byte, []int) {
-	return file_spotd_v1_spotd_proto_rawDescGZIP(), []int{29}
+	return file_spotd_v1_spotd_proto_rawDescGZIP(), []int{30}
 }
 
 var File_spotd_v1_spotd_proto protoreflect.FileDescriptor
@@ -1750,8 +1794,10 @@ const file_spotd_v1_spotd_proto_rawDesc = "" +
 	"\x05plays\x18\x02 \x01(\x03R\x05plays\x12\x1f\n" +
 	"\vlistened_ms\x18\x03 \x01(\x03R\n" +
 	"listenedMs\"\x16\n" +
-	"\x14ListPlaylistsRequest\"\\\n" +
-	"\x15ListPlaylistsResponse\x12\x0e\n" +
+	"\x14ListPlaylistsRequest\"I\n" +
+	"\x15ListPlaylistsResponse\x120\n" +
+	"\tplaylists\x18\x01 \x03(\v2\x12.spotd.v1.PlaylistR\tplaylists\"O\n" +
+	"\bPlaylist\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
 	"\vtrack_count\x18\x03 \x01(\x05R\n" +
@@ -1802,11 +1848,11 @@ const file_spotd_v1_spotd_proto_rawDesc = "" +
 	"\n" +
 	"TopArtists\x12\x1b.spotd.v1.TopArtistsRequest\x1a\x1c.spotd.v1.TopArtistsResponse\x12D\n" +
 	"\tTopTracks\x12\x1a.spotd.v1.TopTracksRequest\x1a\x1b.spotd.v1.TopTracksResponse\x12S\n" +
-	"\x0eListeningByDay\x12\x1f.spotd.v1.ListeningByDayRequest\x1a .spotd.v1.ListeningByDayResponse2\xaf\x02\n" +
+	"\x0eListeningByDay\x12\x1f.spotd.v1.ListeningByDayRequest\x1a .spotd.v1.ListeningByDayResponse2\xb1\x02\n" +
 	"\x0fPlaylistService\x12P\n" +
 	"\rListPlaylists\x12\x1e.spotd.v1.ListPlaylistsRequest\x1a\x1f.spotd.v1.ListPlaylistsResponse\x12A\n" +
-	"\bStartJob\x12\x19.spotd.v1.StartJobRequest\x1a\x1a.spotd.v1.StartJobResponse\x12A\n" +
-	"\bWatchJob\x12\x19.spotd.v1.WatchJobRequest\x1a\x1a.spotd.v1.WatchJobResponse\x12D\n" +
+	"\bStartJob\x12\x19.spotd.v1.StartJobRequest\x1a\x1a.spotd.v1.StartJobResponse\x12C\n" +
+	"\bWatchJob\x12\x19.spotd.v1.WatchJobRequest\x1a\x1a.spotd.v1.WatchJobResponse0\x01\x12D\n" +
 	"\tCancelJob\x12\x1a.spotd.v1.CancelJobRequest\x1a\x1b.spotd.v1.CancelJobResponseB\x90\x01\n" +
 	"\fcom.spotd.v1B\n" +
 	"SpotdProtoP\x01Z3github.com/SteliosSpanos/spotd/gen/spotd/v1;spotdv1\xa2\x02\x03SXX\xaa\x02\bSpotd.V1\xca\x02\bSpotd\\V1\xe2\x02\x14Spotd\\V1\\GPBMetadata\xea\x02\tSpotd::V1b\x06proto3"
@@ -1824,7 +1870,7 @@ func file_spotd_v1_spotd_proto_rawDescGZIP() []byte {
 }
 
 var file_spotd_v1_spotd_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_spotd_v1_spotd_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
+var file_spotd_v1_spotd_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_spotd_v1_spotd_proto_goTypes = []any{
 	(TimeRange)(0),                 // 0: spotd.v1.TimeRange
 	(JobKind)(0),                   // 1: spotd.v1.JobKind
@@ -1853,56 +1899,58 @@ var file_spotd_v1_spotd_proto_goTypes = []any{
 	(*DayCount)(nil),               // 24: spotd.v1.DayCount
 	(*ListPlaylistsRequest)(nil),   // 25: spotd.v1.ListPlaylistsRequest
 	(*ListPlaylistsResponse)(nil),  // 26: spotd.v1.ListPlaylistsResponse
-	(*StartJobRequest)(nil),        // 27: spotd.v1.StartJobRequest
-	(*StartJobResponse)(nil),       // 28: spotd.v1.StartJobResponse
-	(*WatchJobRequest)(nil),        // 29: spotd.v1.WatchJobRequest
-	(*WatchJobResponse)(nil),       // 30: spotd.v1.WatchJobResponse
-	(*CancelJobRequest)(nil),       // 31: spotd.v1.CancelJobRequest
-	(*CancelJobResponse)(nil),      // 32: spotd.v1.CancelJobResponse
-	(*timestamppb.Timestamp)(nil),  // 33: google.protobuf.Timestamp
+	(*Playlist)(nil),               // 27: spotd.v1.Playlist
+	(*StartJobRequest)(nil),        // 28: spotd.v1.StartJobRequest
+	(*StartJobResponse)(nil),       // 29: spotd.v1.StartJobResponse
+	(*WatchJobRequest)(nil),        // 30: spotd.v1.WatchJobRequest
+	(*WatchJobResponse)(nil),       // 31: spotd.v1.WatchJobResponse
+	(*CancelJobRequest)(nil),       // 32: spotd.v1.CancelJobRequest
+	(*CancelJobResponse)(nil),      // 33: spotd.v1.CancelJobResponse
+	(*timestamppb.Timestamp)(nil),  // 34: google.protobuf.Timestamp
 }
 var file_spotd_v1_spotd_proto_depIdxs = []int32{
 	13, // 0: spotd.v1.WatchEventsResponse.now_playing:type_name -> spotd.v1.NowPlaying
 	14, // 1: spotd.v1.WatchEventsResponse.stopped:type_name -> spotd.v1.Stopped
 	15, // 2: spotd.v1.WatchEventsResponse.history_updated:type_name -> spotd.v1.HistoryUpdated
-	33, // 3: spotd.v1.NowPlaying.fetched_at:type_name -> google.protobuf.Timestamp
+	34, // 3: spotd.v1.NowPlaying.fetched_at:type_name -> google.protobuf.Timestamp
 	0,  // 4: spotd.v1.TopArtistsRequest.range:type_name -> spotd.v1.TimeRange
 	18, // 5: spotd.v1.TopArtistsResponse.artists:type_name -> spotd.v1.ArtistCount
 	0,  // 6: spotd.v1.TopTracksRequest.range:type_name -> spotd.v1.TimeRange
 	21, // 7: spotd.v1.TopTracksResponse.tracks:type_name -> spotd.v1.TrackCount
 	0,  // 8: spotd.v1.ListeningByDayRequest.range:type_name -> spotd.v1.TimeRange
 	24, // 9: spotd.v1.ListeningByDayResponse.days:type_name -> spotd.v1.DayCount
-	1,  // 10: spotd.v1.StartJobRequest.kind:type_name -> spotd.v1.JobKind
-	2,  // 11: spotd.v1.WatchJobResponse.state:type_name -> spotd.v1.JobState
-	3,  // 12: spotd.v1.PlayerService.Play:input_type -> spotd.v1.PlayRequest
-	5,  // 13: spotd.v1.PlayerService.Pause:input_type -> spotd.v1.PauseRequest
-	7,  // 14: spotd.v1.PlayerService.Next:input_type -> spotd.v1.NextRequest
-	9,  // 15: spotd.v1.PlayerService.Queue:input_type -> spotd.v1.QueueRequest
-	11, // 16: spotd.v1.PlayerService.WatchEvents:input_type -> spotd.v1.WatchEventsRequest
-	16, // 17: spotd.v1.StatsService.TopArtists:input_type -> spotd.v1.TopArtistsRequest
-	19, // 18: spotd.v1.StatsService.TopTracks:input_type -> spotd.v1.TopTracksRequest
-	22, // 19: spotd.v1.StatsService.ListeningByDay:input_type -> spotd.v1.ListeningByDayRequest
-	25, // 20: spotd.v1.PlaylistService.ListPlaylists:input_type -> spotd.v1.ListPlaylistsRequest
-	27, // 21: spotd.v1.PlaylistService.StartJob:input_type -> spotd.v1.StartJobRequest
-	29, // 22: spotd.v1.PlaylistService.WatchJob:input_type -> spotd.v1.WatchJobRequest
-	31, // 23: spotd.v1.PlaylistService.CancelJob:input_type -> spotd.v1.CancelJobRequest
-	4,  // 24: spotd.v1.PlayerService.Play:output_type -> spotd.v1.PlayResponse
-	6,  // 25: spotd.v1.PlayerService.Pause:output_type -> spotd.v1.PauseResponse
-	8,  // 26: spotd.v1.PlayerService.Next:output_type -> spotd.v1.NextResponse
-	10, // 27: spotd.v1.PlayerService.Queue:output_type -> spotd.v1.QueueResponse
-	12, // 28: spotd.v1.PlayerService.WatchEvents:output_type -> spotd.v1.WatchEventsResponse
-	17, // 29: spotd.v1.StatsService.TopArtists:output_type -> spotd.v1.TopArtistsResponse
-	20, // 30: spotd.v1.StatsService.TopTracks:output_type -> spotd.v1.TopTracksResponse
-	23, // 31: spotd.v1.StatsService.ListeningByDay:output_type -> spotd.v1.ListeningByDayResponse
-	26, // 32: spotd.v1.PlaylistService.ListPlaylists:output_type -> spotd.v1.ListPlaylistsResponse
-	28, // 33: spotd.v1.PlaylistService.StartJob:output_type -> spotd.v1.StartJobResponse
-	30, // 34: spotd.v1.PlaylistService.WatchJob:output_type -> spotd.v1.WatchJobResponse
-	32, // 35: spotd.v1.PlaylistService.CancelJob:output_type -> spotd.v1.CancelJobResponse
-	24, // [24:36] is the sub-list for method output_type
-	12, // [12:24] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	27, // 10: spotd.v1.ListPlaylistsResponse.playlists:type_name -> spotd.v1.Playlist
+	1,  // 11: spotd.v1.StartJobRequest.kind:type_name -> spotd.v1.JobKind
+	2,  // 12: spotd.v1.WatchJobResponse.state:type_name -> spotd.v1.JobState
+	3,  // 13: spotd.v1.PlayerService.Play:input_type -> spotd.v1.PlayRequest
+	5,  // 14: spotd.v1.PlayerService.Pause:input_type -> spotd.v1.PauseRequest
+	7,  // 15: spotd.v1.PlayerService.Next:input_type -> spotd.v1.NextRequest
+	9,  // 16: spotd.v1.PlayerService.Queue:input_type -> spotd.v1.QueueRequest
+	11, // 17: spotd.v1.PlayerService.WatchEvents:input_type -> spotd.v1.WatchEventsRequest
+	16, // 18: spotd.v1.StatsService.TopArtists:input_type -> spotd.v1.TopArtistsRequest
+	19, // 19: spotd.v1.StatsService.TopTracks:input_type -> spotd.v1.TopTracksRequest
+	22, // 20: spotd.v1.StatsService.ListeningByDay:input_type -> spotd.v1.ListeningByDayRequest
+	25, // 21: spotd.v1.PlaylistService.ListPlaylists:input_type -> spotd.v1.ListPlaylistsRequest
+	28, // 22: spotd.v1.PlaylistService.StartJob:input_type -> spotd.v1.StartJobRequest
+	30, // 23: spotd.v1.PlaylistService.WatchJob:input_type -> spotd.v1.WatchJobRequest
+	32, // 24: spotd.v1.PlaylistService.CancelJob:input_type -> spotd.v1.CancelJobRequest
+	4,  // 25: spotd.v1.PlayerService.Play:output_type -> spotd.v1.PlayResponse
+	6,  // 26: spotd.v1.PlayerService.Pause:output_type -> spotd.v1.PauseResponse
+	8,  // 27: spotd.v1.PlayerService.Next:output_type -> spotd.v1.NextResponse
+	10, // 28: spotd.v1.PlayerService.Queue:output_type -> spotd.v1.QueueResponse
+	12, // 29: spotd.v1.PlayerService.WatchEvents:output_type -> spotd.v1.WatchEventsResponse
+	17, // 30: spotd.v1.StatsService.TopArtists:output_type -> spotd.v1.TopArtistsResponse
+	20, // 31: spotd.v1.StatsService.TopTracks:output_type -> spotd.v1.TopTracksResponse
+	23, // 32: spotd.v1.StatsService.ListeningByDay:output_type -> spotd.v1.ListeningByDayResponse
+	26, // 33: spotd.v1.PlaylistService.ListPlaylists:output_type -> spotd.v1.ListPlaylistsResponse
+	29, // 34: spotd.v1.PlaylistService.StartJob:output_type -> spotd.v1.StartJobResponse
+	31, // 35: spotd.v1.PlaylistService.WatchJob:output_type -> spotd.v1.WatchJobResponse
+	33, // 36: spotd.v1.PlaylistService.CancelJob:output_type -> spotd.v1.CancelJobResponse
+	25, // [25:37] is the sub-list for method output_type
+	13, // [13:25] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_spotd_v1_spotd_proto_init() }
@@ -1921,7 +1969,7 @@ func file_spotd_v1_spotd_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spotd_v1_spotd_proto_rawDesc), len(file_spotd_v1_spotd_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   30,
+			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   3,
 		},

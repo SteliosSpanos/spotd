@@ -467,7 +467,7 @@ const (
 type PlaylistServiceClient interface {
 	ListPlaylists(ctx context.Context, in *ListPlaylistsRequest, opts ...grpc.CallOption) (*ListPlaylistsResponse, error)
 	StartJob(ctx context.Context, in *StartJobRequest, opts ...grpc.CallOption) (*StartJobResponse, error)
-	WatchJob(ctx context.Context, in *WatchJobRequest, opts ...grpc.CallOption) (*WatchJobResponse, error)
+	WatchJob(ctx context.Context, in *WatchJobRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WatchJobResponse], error)
 	CancelJob(ctx context.Context, in *CancelJobRequest, opts ...grpc.CallOption) (*CancelJobResponse, error)
 }
 
@@ -499,15 +499,24 @@ func (c *playlistServiceClient) StartJob(ctx context.Context, in *StartJobReques
 	return out, nil
 }
 
-func (c *playlistServiceClient) WatchJob(ctx context.Context, in *WatchJobRequest, opts ...grpc.CallOption) (*WatchJobResponse, error) {
+func (c *playlistServiceClient) WatchJob(ctx context.Context, in *WatchJobRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WatchJobResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(WatchJobResponse)
-	err := c.cc.Invoke(ctx, PlaylistService_WatchJob_FullMethodName, in, out, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &PlaylistService_ServiceDesc.Streams[0], PlaylistService_WatchJob_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &grpc.GenericClientStream[WatchJobRequest, WatchJobResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type PlaylistService_WatchJobClient = grpc.ServerStreamingClient[WatchJobResponse]
 
 func (c *playlistServiceClient) CancelJob(ctx context.Context, in *CancelJobRequest, opts ...grpc.CallOption) (*CancelJobResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -525,7 +534,7 @@ func (c *playlistServiceClient) CancelJob(ctx context.Context, in *CancelJobRequ
 type PlaylistServiceServer interface {
 	ListPlaylists(context.Context, *ListPlaylistsRequest) (*ListPlaylistsResponse, error)
 	StartJob(context.Context, *StartJobRequest) (*StartJobResponse, error)
-	WatchJob(context.Context, *WatchJobRequest) (*WatchJobResponse, error)
+	WatchJob(*WatchJobRequest, grpc.ServerStreamingServer[WatchJobResponse]) error
 	CancelJob(context.Context, *CancelJobRequest) (*CancelJobResponse, error)
 	mustEmbedUnimplementedPlaylistServiceServer()
 }
@@ -543,8 +552,8 @@ func (UnimplementedPlaylistServiceServer) ListPlaylists(context.Context, *ListPl
 func (UnimplementedPlaylistServiceServer) StartJob(context.Context, *StartJobRequest) (*StartJobResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method StartJob not implemented")
 }
-func (UnimplementedPlaylistServiceServer) WatchJob(context.Context, *WatchJobRequest) (*WatchJobResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method WatchJob not implemented")
+func (UnimplementedPlaylistServiceServer) WatchJob(*WatchJobRequest, grpc.ServerStreamingServer[WatchJobResponse]) error {
+	return status.Error(codes.Unimplemented, "method WatchJob not implemented")
 }
 func (UnimplementedPlaylistServiceServer) CancelJob(context.Context, *CancelJobRequest) (*CancelJobResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CancelJob not implemented")
@@ -606,23 +615,16 @@ func _PlaylistService_StartJob_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PlaylistService_WatchJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WatchJobRequest)
-	if err := dec(in); err != nil {
-		return nil, err
+func _PlaylistService_WatchJob_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(WatchJobRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(PlaylistServiceServer).WatchJob(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: PlaylistService_WatchJob_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PlaylistServiceServer).WatchJob(ctx, req.(*WatchJobRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(PlaylistServiceServer).WatchJob(m, &grpc.GenericServerStream[WatchJobRequest, WatchJobResponse]{ServerStream: stream})
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type PlaylistService_WatchJobServer = grpc.ServerStreamingServer[WatchJobResponse]
 
 func _PlaylistService_CancelJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CancelJobRequest)
@@ -658,14 +660,16 @@ var PlaylistService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _PlaylistService_StartJob_Handler,
 		},
 		{
-			MethodName: "WatchJob",
-			Handler:    _PlaylistService_WatchJob_Handler,
-		},
-		{
 			MethodName: "CancelJob",
 			Handler:    _PlaylistService_CancelJob_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "WatchJob",
+			Handler:       _PlaylistService_WatchJob_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "spotd/v1/spotd.proto",
 }
