@@ -113,6 +113,7 @@ commands:
   logout    remove the stored refresh token
   daemon    run the background poller and gRPC server
   version   print version info
+	tui				open the terminal UI (needs a running daemon)
 
 run "spotd <command> -h" for the flags of a command
 `)
