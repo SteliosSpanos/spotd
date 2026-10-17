@@ -37,11 +37,12 @@ const (
 
 type Kind int
 
+// Values mirror pb.JobKind, 0 is left unused like JOB_KIND_UNSPECIFIED
 const (
-	Backup Kind = iota
-	Restore
-	Dedupe
+	Dedupe Kind = iota + 1
 	Sort
+	Backup
+	Restore
 )
 
 func (k Kind) String() string {
