@@ -7,6 +7,6 @@ sql:
       go:
         package: "db"
         out: "internal/store/db"
-        emit_interface: true
+        emit_interface: false
         emit_json_tags: false
         emit_empty_slices: true
