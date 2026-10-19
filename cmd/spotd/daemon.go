@@ -16,6 +16,7 @@ import (
 
 	"github.com/SteliosSpanos/spotd/internal/auth"
 	"github.com/SteliosSpanos/spotd/internal/events"
+	"github.com/SteliosSpanos/spotd/internal/jobs"
 	"github.com/SteliosSpanos/spotd/internal/poller"
 	"github.com/SteliosSpanos/spotd/internal/server"
 	"github.com/SteliosSpanos/spotd/internal/spotify"
@@ -52,7 +53,8 @@ func runDaemon(ctx context.Context, log *slog.Logger, clientID, socketPath, dbPa
 	// The auto-refreshing OAuth engine
 	ts := auth.NewTokenSource(tctx, auth.Config(clientID), rt, secrets.SaveRefreshToken, log)
 	api := spotify.New(ts, log)
-	bus := events.New[events.Event](16)
+	// only replay playback state to new watchers, never a stale HistoryUpdated
+	bus := events.NewWithReplay(16, events.Event.Replayable)
 	st := store.New(db)
 	p := poller.New(api, st, bus, log)
 
@@ -61,12 +63,20 @@ func runDaemon(ctx context.Context, log *slog.Logger, clientID, socketPath, dbPa
 		return err
 	}
 
-	// The gRPC API server
-	srv := server.New(log, server.NewPlayer(api, bus), server.NewStats(st))
-
 	// errgroup manages multiple background threads
 	// If one of the crashes, it automatically cancels the context for all of them
 	g, gctx := errgroup.WithContext(ctx)
+
+	// Jobs live al long as gctx
+	jm := jobs.NewManager(gctx, log)
+	runners := jobs.NewPlaylists(api, filepath.Join(filepath.Dir(dbPath), "backups"))
+
+	srv := server.New(
+		log,
+		server.NewPlayer(api, bus),
+		server.NewStats(st),
+		server.NewPlaylists(api, runners, jm),
+	)
 
 	g.Go(func() error { return p.RunFast(gctx) })
 
@@ -101,6 +111,9 @@ func runDaemon(ctx context.Context, log *slog.Logger, clientID, socketPath, dbPa
 			log.Warn("graceful stop timed out, forcing")
 			srv.Stop()
 		}
+
+		// gctx is already cancelled, so the jobs are stopping, wait for them to return
+		jm.Wait()
 
 		if err := os.Remove(socketPath); err != nil && !errors.Is(err, os.ErrNotExist) {
 			log.Warn("remove socket", "err", err)
