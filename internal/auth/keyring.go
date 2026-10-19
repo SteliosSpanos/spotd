@@ -14,13 +14,6 @@ const (
 
 var ErrNotLoggedIn = errors.New("not logged in: run `spotd login`")
 
-// This interface allows us to easily swap between a KeyringStore and a FileStore without breaking the app
-type SecretStore interface {
-	SaveRefreshToken(string) error
-	RefreshToken() (string, error)
-	Clear() error
-}
-
 type KeyringStore struct{}
 
 func (KeyringStore) SaveRefreshToken(t string) error {
@@ -48,6 +41,9 @@ func (KeyringStore) Clear() error {
 	if errors.Is(err, keyring.ErrNotFound) {
 		return nil
 	}
+	if err != nil {
+		return fmt.Errorf("keyring delete: %w", err)
+	}
 
-	return err
+	return nil
 }
