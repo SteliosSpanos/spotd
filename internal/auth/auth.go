@@ -84,10 +84,11 @@ func Login(ctx context.Context, conf *oauth2.Config, openBrowser func(string) er
 		// ConstantTimeCompare prevents hackers from guessing the state token via timing attacks
 		if subtle.ConstantTimeCompare([]byte(q.Get("state")), []byte(state)) != 1 {
 			http.Error(w, "state mismatch", http.StatusBadRequest)
-			trySend(resCh, result{err: errors.New("state mismatch")})
 			return
 		}
 
+		// We are sure that the request came from Spotify (checked 'state')
+		// Now we can send the error in the channel
 		if e := q.Get("error"); e != "" {
 			http.Error(w, "authorization denied", http.StatusBadRequest)
 			trySend(resCh, result{err: fmt.Errorf("authorization error: %s", e)})
