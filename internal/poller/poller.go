@@ -81,6 +81,7 @@ func New(api SpotifyAPI, store PlayStore, pub Publisher, l *slog.Logger) *Poller
 
 func (p *Poller) RunFast(ctx context.Context) error {
 	var last *events.NowPlaying
+	first := true
 	t := time.NewTicker(p.fastEvery)
 	defer t.Stop()
 
@@ -93,9 +94,11 @@ func (p *Poller) RunFast(ctx context.Context) error {
 		case err != nil:
 			// Transient errors must not kill the daemon, the client already retried
 			p.log.Warn("poll currently-playing", "err", err)
-		case changed(last, cur):
+		// Always publish the first poll so watchers learn the state even if nothing is playing
+		case first || changed(last, cur):
 			p.pub.Publish(events.Event{NowPlaying: cur})
 			last = cur
+			first = false
 		default:
 			last = cur
 		}
