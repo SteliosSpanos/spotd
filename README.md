@@ -5,8 +5,8 @@ listening to, keeps a local SQLite history of every play, and exposes playback c
 listening statistics over gRPC on a Unix socket.
 
 > **Status:** early development. The daemon, login flow, poller, history store and the
-> Player/Stats gRPC services work today. The playlist job engine exists as a package but is not
-> wired into the daemon yet, and the TUI is not written yet. See [Roadmap](#roadmap).
+> Player/Stats gRPC services work today. The playlist job engine is wired in through `PlaylistService`,
+> and the TUI is not written yet. See [Roadmap](#roadmap).
 
 ## Table of contents
 
@@ -238,7 +238,7 @@ spotd/
 │   │   ├── queries/      sqlc source queries
 │   │   └── db/           sqlc-generated code (do not edit)
 │   ├── server/           gRPC services, interceptors, error mapping, socket listener
-│   └── jobs/             playlist job manager and runners (not wired yet)
+│   └── jobs/             playlist job manager and runners
 ├── proto/spotd/v1/       protobuf API definition
 ├── gen/spotd/v1/         buf-generated Go code (do not edit)
 └── docs/study/           study notes for each technology used
@@ -321,7 +321,7 @@ the jobs package, for per-job progress.
                     Publish(v)
  Poller ──────────────┐
                       ▼
-            ┌────────────────────┐   last = v (replayed to new subscribers)
+            ┌────────────────────┐   last = v if replay(v) (replayed to new subscribers)
             │   Broadcaster[T]   │
             └──┬───────┬───────┬─┘
                ▼       ▼       ▼        buffered chan per subscriber (16)
@@ -334,6 +334,11 @@ the jobs package, for per-job progress.
   disconnected, so it can't stall the poller.
 - **New subscribers get the last event right away.** A client that connects mid-song sees the
   current track without waiting for the next change.
+- **Replay is filterable.** `New` caches every event for late subscribers. `NewWithReplay(bufSize,
+  replay)` caches only events for which `replay` returns true, while still delivering all events
+  to current subscribers. The daemon's bus uses `events.Event.Replayable`, so a one-off
+  `HistoryUpdated` is never replayed to a newly connected `WatchEvents` client and can't replace
+  the cached now-playing state. Job progress uses plain `New`.
 - The `cancel` returned by `Subscribe` is wrapped in `sync.OnceFunc`, so calling it twice is safe.
   `Close()` closes every subscriber channel.
 
@@ -393,7 +398,6 @@ mode allows.
  ├──────────────────────┤
  │ played_at_ms  PK     │  ◄── idempotency key
  │ track_id      FK     │      (index plays_track_idx)
- │ context_uri          │
  └──────────────────────┘
 ```
 
@@ -423,7 +427,7 @@ The contract lives in [`proto/spotd/v1/spotd.proto`](proto/spotd/v1/spotd.proto)
 |                   | `TopTracks`      | unary         | same                                                      |
 |                   | `ListeningByDay` | unary         | `range`                                                   |
 | `grpc.health.v1`  | `Check`/`Watch`  | standard      |                                                           |
-| `PlaylistService` | —                | *defined only* | not registered on the server yet                         |
+| `PlaylistService` | —                | implemented   | `ListPlaylists`, `StartJob`, `WatchJob`, `CancelJob`      |
 
 **Interceptor chain** (unary and stream): `recover` → `status/log` → handler.
 
@@ -443,7 +447,7 @@ The contract lives in [`proto/spotd/v1/spotd.proto`](proto/spotd/v1/spotd.proto)
 
 ### Playlist jobs
 
-> Implemented in `internal/jobs`, **not yet exposed** through `PlaylistService`.
+> Implemented in `internal/jobs` and exposed through `PlaylistService` (`StartJob`, `WatchJob`, `CancelJob`).
 
 `jobs.Manager` runs long playlist operations inside the daemon, so they keep going even if the
 client that started them disconnects.
@@ -514,7 +518,7 @@ To add a database change, add a new `internal/store/migrations/0000N_<name>.sql`
 - [x] SQLite store, goose migrations, sqlc queries
 - [x] gRPC `PlayerService` and `StatsService` over a Unix socket
 - [x] Playlist job manager and runners (backup, restore, dedupe, sort)
-- [ ] `PlaylistService` gRPC handlers and daemon wiring for jobs
+- [x] `PlaylistService` gRPC handlers and daemon wiring for jobs
 - [ ] `spotd tui` (Bubble Tea): Now playing, Stats and Playlists tabs
 - [ ] Tests (broadcaster, poller, client retries, store, jobs)
 - [ ] golangci-lint, GitHub Actions CI, GoReleaser
