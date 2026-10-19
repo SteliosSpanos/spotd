@@ -23,3 +23,9 @@ type Event struct {
 	NowPlaying     *NowPlaying
 	HistoryUpdated *HistoryUpdated
 }
+
+// HistoryUpdated must not be replayed to new WatchEvents clients
+// Replayable reports whether a late subscriber should be told about this event
+func (ev Event) Replayable() bool {
+	return ev.HistoryUpdated == nil
+}

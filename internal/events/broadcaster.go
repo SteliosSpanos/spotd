@@ -12,7 +12,8 @@ type Broadcaster[T any] struct {
 	subs    map[*sub[T]]struct{} // By using a pointer as the key, the memory address acts as a unique id
 	last    *T                   // Caches the most recently published event
 	closed  bool
-	bufSize int // How many unread events a subscriber can hold before getting full
+	bufSize int          // How many unread events a subscriber can hold before getting full
+	replay  func(T) bool // Decides which events get cached for late subscribers, nil means every event
 }
 
 type sub[T any] struct {
@@ -21,6 +22,14 @@ type sub[T any] struct {
 
 func New[T any](bufSize int) *Broadcaster[T] {
 	return &Broadcaster[T]{subs: make(map[*sub[T]]struct{}), bufSize: bufSize}
+}
+
+// NewWithReplay is like New, but only events for which replay returns true are cached and handed to new subscribers
+// Events that fail the check are still delivered to current subscribers, they just don't replace the cached one
+func NewWithReplay[T any](bufSize int, replay func(T) bool) *Broadcaster[T] {
+	b := New[T](bufSize)
+	b.replay = replay
+	return b
 }
 
 // Subscribe gives a listener a channel to receive events on, and a function to hang up (like cancel())
@@ -67,7 +76,10 @@ func (b *Broadcaster[T]) Publish(v T) {
 		return
 	}
 
-	b.last = &v
+	if b.replay == nil || b.replay(v) {
+		b.last = &v
+	}
+
 	for s := range b.subs {
 		select {
 		case s.ch <- v:
