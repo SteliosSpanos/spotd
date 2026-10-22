@@ -72,9 +72,8 @@ func (c *Client) RecentlyPlayed(ctx context.Context, after time.Time) ([]PlayHis
 // Spotify limits lists to 50 items per request
 // If we have 200 items, Spotify sends the first 50 and provides a 'next' URL to get the next 50
 type Page[T any] struct {
-	Items []T    `json:"items"`
-	Next  string `json:"next"`
-	Total int    `json:"total"`
+	Items []T `json:"items"`
+	Next string `json:"next"`
 }
 
 func paginate[T any](ctx context.Context, c *Client, first string, fn func([]T) error) error {
