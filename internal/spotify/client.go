@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -36,6 +37,10 @@ type Client struct {
 	maxDelay   time.Duration
 	sleep      func(context.Context, time.Duration) error
 	baseURL    string
+
+	// Cached user id for ListPlaylists owner filtering
+	meMu sync.Mutex
+	me   string
 }
 
 // It acts like time.Sleep, but it listens to the context, and if the context is cancelled while it's sleeping, it wakes up and returns the error
@@ -52,14 +57,17 @@ func sleepCtx(ctx context.Context, d time.Duration) error {
 }
 
 func New(ts oauth2.TokenSource, l *slog.Logger) *Client {
+	// The hand-built transport ignored HTTPS_PROXY/HTTP_PROXY
+	// Cloning the default transport keeps ProxyFromEnvironment, HTTP/2 and dial timeouts
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.MaxIdleConnsPerHost = 4
+	transport.IdleConnTimeout = 90 * time.Second
+	transport.TLSHandshakeTimeout = 10 * time.Second
+
 	return &Client{
 		http: &http.Client{
-			Timeout: 20 * time.Second,
-			Transport: &http.Transport{
-				MaxIdleConnsPerHost: 4,
-				IdleConnTimeout:     90 * time.Second,
-				TLSHandshakeTimeout: 10 * time.Second,
-			},
+			Timeout:   20 * time.Second,
+			Transport: transport,
 		},
 		tokens:     ts,
 		log:        l,
