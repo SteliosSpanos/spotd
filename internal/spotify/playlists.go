@@ -2,6 +2,7 @@ package spotify
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/url"
 	"time"
@@ -15,7 +16,12 @@ type Playlist struct {
 	// SnapshotID acts like a version number for the playlist
 	// Every time the playlist changes, Spotify generates a new SnapshotID
 	SnapshotID string `json:"snapshot_id"`
-	Items      struct {
+	// Owner and collaborative are needed to filter ListPlaylists
+	Collaborative bool `json:"collaborative"`
+	Owner         struct {
+		ID string `json:"id"`
+	} `json:"owner"`
+	Items struct {
 		Total int `json:"total"`
 	} `json:"items"`
 }
@@ -34,14 +40,47 @@ type snapshot struct {
 	SnapshotID string `json:"snapshot_id"`
 }
 
+// Only owned or collaborative playlists, followed ones can't be used by jobs
 func (c *Client) MyPlaylists(ctx context.Context) ([]Playlist, error) {
+	me, err := c.userID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	var all []Playlist
-	err := paginate(ctx, c, c.baseURL+"/me/playlists?limit=50", func(items []Playlist) error {
-		all = append(all, items...)
+	err = paginate(ctx, c, c.baseURL+"/me/playlists?limit=50", func(items []Playlist) error {
+		for _, p := range items {
+			if p.Owner.ID == me || p.Collaborative {
+				all = append(all, p)
+			}
+		}
 		return nil
 	})
 
 	return all, err
+}
+
+// userID fetches GET /me once and caches the id, a failed fetch is not cached
+func (c *Client) userID(ctx context.Context) (string, error) {
+	c.meMu.Lock()
+	defer c.meMu.Unlock()
+
+	if c.me != "" {
+		return c.me, nil
+	}
+
+	var u struct {
+		ID string `json:"id"`
+	}
+	if err := c.do(ctx, http.MethodGet, "/me", nil, &u, true); err != nil {
+		return "", err
+	}
+	if u.ID == "" {
+		return "", errors.New("spotify returned an empty user id")
+	}
+
+	c.me = u.ID
+	return c.me, nil
 }
 
 // Playlist fetches basic metadata for a single playlist
