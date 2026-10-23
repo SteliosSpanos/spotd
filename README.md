@@ -508,17 +508,3 @@ Generated code (`gen/`, `internal/store/db/`) is committed. Don't edit it by han
 
 To add a database change, add a new `internal/store/migrations/0000N_<name>.sql` file with
 `-- +goose Up` / `-- +goose Down` sections. The daemon applies it on its next start.
-
-## Roadmap
-
-- [x] CLI skeleton: `login`, `logout`, `daemon`, `version`
-- [x] OAuth2 PKCE login and keyring storage
-- [x] Resilient Spotify client
-- [x] Poller (now playing and history ingestion)
-- [x] SQLite store, goose migrations, sqlc queries
-- [x] gRPC `PlayerService` and `StatsService` over a Unix socket
-- [x] Playlist job manager and runners (backup, restore, dedupe, sort)
-- [x] `PlaylistService` gRPC handlers and daemon wiring for jobs
-- [ ] `spotd tui` (Bubble Tea): Now playing, Stats and Playlists tabs
-- [ ] Tests (broadcaster, poller, client retries, store, jobs)
-- [ ] golangci-lint, GitHub Actions CI, GoReleaser
