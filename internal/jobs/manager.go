@@ -18,6 +18,7 @@ import (
 var (
 	ErrBusy     = errors.New("another job is already running on this playlist")
 	ErrNotFound = errors.New("unknown job")
+	ErrClosed = errors.New("job manager is shutting down")
 )
 
 const (
@@ -87,11 +88,12 @@ type job struct {
 }
 
 type Manager struct {
-	mu      sync.Mutex
-	jobs    map[string]*job
-	busy    map[string]string // Prevents running two different jobs on the same playlist
-	sem     chan struct{}
-	wg      sync.WaitGroup  // Keeps track of how many jobs are running so the daemon can shut them down safely
+	mu   sync.Mutex
+	jobs map[string]*job
+	busy map[string]string // Prevents running two different jobs on the same playlist
+	sem  chan struct{}
+	wg   sync.WaitGroup // Keeps track of how many jobs are running so the daemon can shut them down safely
+	closed  bool            // Set by Wait, no job may start afterwards or wg.Add would race with wg.Wait
 	baseCtx context.Context // The daemon's lifetime: shutting down cancels every job
 	log     *slog.Logger
 }
@@ -110,6 +112,10 @@ func NewManager(ctx context.Context, l *slog.Logger) *Manager {
 func (m *Manager) Start(kind Kind, playlistID string, run Runner) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	if m.closed {
+		return "", ErrClosed
+	}
 
 	// Clean up old jobs to save memory
 	m.evictLocked()
@@ -137,7 +143,17 @@ func (m *Manager) Start(kind Kind, playlistID string, run Runner) (string, error
 	go func() {
 		defer m.wg.Done()
 		defer cancel()
-		m.finish(j, m.run(ctx, j, run))
+
+		var err error
+		defer func() {
+			if r := recover(); r != nil {
+				m.log.Error("job panicked", "job", j.id, "kind", j.kind, "panic", r)
+				err = fmt.Errorf("panic: %v", r)
+			}
+			m.finish(j, err)
+		}()
+
+		err = m.run(ctx, j, run)
 	}()
 
 	// Return the id to the CLI so the user can track it
@@ -156,6 +172,11 @@ func (m *Manager) run(ctx context.Context, j *job, run Runner) error {
 		return ctx.Err()
 	}
 	defer func() { <-m.sem }() // Give the slot back
+
+	// select picks randomly when both cases are ready, so a cancelled job may still have won the slot
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 
 	j.progress.Publish(Progress{JobID: j.id, State: Running})
 	m.log.Info("job started", "job", j.id, "kind", j.kind, "playlist", j.target)
@@ -226,6 +247,10 @@ func (m *Manager) Cancel(id string) error {
 }
 
 func (m *Manager) Wait() {
+	m.mu.Lock()
+	m.closed = true
+	m.mu.Unlock()
+
 	m.wg.Wait()
 }
 
