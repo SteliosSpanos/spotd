@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 )
 
 const deleteTrackArtists = `-- name: DeleteTrackArtists :exec
@@ -20,19 +19,18 @@ func (q *Queries) DeleteTrackArtists(ctx context.Context, trackID string) error 
 }
 
 const insertPlay = `-- name: InsertPlay :execrows
-INSERT INTO plays (played_at_ms, track_id, context_uri)
-VALUES (?, ?, ?)
+INSERT INTO plays (played_at_ms, track_id)
+VALUES (?, ?)
 ON CONFLICT (played_at_ms) DO NOTHING
 `
 
 type InsertPlayParams struct {
 	PlayedAtMs int64
 	TrackID    string
-	ContextUri sql.NullString
 }
 
 func (q *Queries) InsertPlay(ctx context.Context, arg InsertPlayParams) (int64, error) {
-	result, err := q.db.ExecContext(ctx, insertPlay, arg.PlayedAtMs, arg.TrackID, arg.ContextUri)
+	result, err := q.db.ExecContext(ctx, insertPlay, arg.PlayedAtMs, arg.TrackID)
 	if err != nil {
 		return 0, err
 	}

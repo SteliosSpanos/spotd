@@ -4,10 +4,6 @@
 
 package db
 
-import (
-	"database/sql"
-)
-
 type Artist struct {
 	ID   string
 	Name string
@@ -16,7 +12,6 @@ type Artist struct {
 type Play struct {
 	PlayedAtMs int64
 	TrackID    string
-	ContextUri sql.NullString
 }
 
 type Track struct {
