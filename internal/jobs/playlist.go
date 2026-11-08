@@ -39,14 +39,14 @@ func NewPlaylists(api PlaylistAPI, backupDir string) *Playlists {
 
 func (p *Playlists) Runner(kind Kind, playlistID string) (Runner, error) {
 	// The ID ends up in backup file paths and glob patterns, so only allow Spotify's base62 IDs
-	if !validID(playlistID) {
+	if !ValidID(playlistID) {
 		return nil, fmt.Errorf("invalid playlist id %q", playlistID)
 	}
 
 	switch kind {
 	case Backup:
 		return func(ctx context.Context, report Report) error {
-			_, err := p.backup(ctx, playlistID, report)
+			_, _, err := p.backup(ctx, playlistID, report)
 			return err
 		}, nil
 	case Restore:
@@ -82,17 +82,17 @@ type backupItem struct {
 
 // backup saves the playlist to <backupDir>/<id>-<timestamp>.json
 // It returns the items it fetched so dedupe/sort don't need to fetch them twice
-func (p *Playlists) backup(ctx context.Context, id string, report Report) ([]spotify.PlaylistItem, error) {
+func (p *Playlists) backup(ctx context.Context, id string, report Report) ([]spotify.PlaylistItem, string, error) {
 	report(0, 0, "fetching playlist")
 
 	meta, err := p.api.Playlist(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("get playlist: %w", err)
+		return nil, "", fmt.Errorf("get playlist: %w", err)
 	}
 
 	items, err := p.api.PlaylistItems(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("get items: %w", err)
+		return nil, "", fmt.Errorf("get items: %w", err)
 	}
 
 	b := backupFile{PlaylistID: id, Name: meta.Name, SnapshotID: meta.SnapshotID, CreatedAt: p.now().UTC()}
@@ -105,17 +105,17 @@ func (p *Playlists) backup(ctx context.Context, id string, report Report) ([]spo
 
 	data, err := json.MarshalIndent(b, "", " ")
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// The timestamp format sorts alphabetically in time order, restore relies on that
 	name := fmt.Sprintf("%s-%s.json", id, b.CreatedAt.Format("20060102T150405Z"))
 	if err := writeFileAtomic(filepath.Join(p.backupDir, name), data); err != nil {
-		return nil, fmt.Errorf("write backup: %w", err)
+		return nil, "", fmt.Errorf("write backup: %w", err)
 	}
 
 	report(len(b.Items), len(b.Items), "backup saved: "+name)
-	return items, nil
+	return items, name, nil
 }
 
 // writeFileAtomic writes to a temp file in the same directory and renames it over the target
@@ -219,7 +219,7 @@ func addAll(ctx context.Context, api PlaylistAPI, id string, uris []string, repo
 }
 
 func (p *Playlists) dedupe(ctx context.Context, id string, report Report) error {
-	items, err := p.backup(ctx, id, report)
+	items, backupName, err := p.backup(ctx, id, report)
 	if err != nil {
 		return err
 	}
@@ -262,20 +262,33 @@ func (p *Playlists) dedupe(ctx context.Context, id string, report Report) error 
 	// When you tell Spotify to delete a URI, it deletes every copy of it
 	for chunk := range slices.Chunk(dups, spotify.MaxItemsPerRequest) {
 		if snap, err = p.api.RemoveItems(ctx, id, chunk, snap); err != nil {
-			return fmt.Errorf("removing duplicates: %w", err)
+			err = fmt.Errorf("removing duplicates: %w", err)
+			if removed := dups[:done]; len(removed) > 0 {
+				// Earlier chunks already removed every copy of their tracks
+				if rerr := p.finishWrite(ctx, id, removed, func(int) {}); rerr != nil {
+					// %v, not %w: a wrapped context.Canceled would make the manager drop this message
+					return fmt.Errorf("%v; re-adding removed tracks failed, restore from backup %s: %v", err, backupName, rerr)
+				}
+			}
+			return err
 		}
 		done += len(chunk)
 		report(done, total, "removing duplicate clusters")
 	}
 
 	// Because all copies were wiped out, we must re-add exactly one copy of each
-	return addAll(ctx, p.api, id, dups, func(added, _ int, msg string) {
+	err = p.finishWrite(ctx, id, dups, func(added int) {
 		report(done+added, total, "re-adding one copy of each")
 	})
+	if err != nil {
+		return fmt.Errorf("re-adding removed tracks, restore from backup %s: %v", backupName, err)
+	}
+
+	return nil
 }
 
 func (p *Playlists) sort(ctx context.Context, id string, report Report) error {
-	items, err := p.backup(ctx, id, report)
+	items, backupName, err := p.backup(ctx, id, report)
 	if err != nil {
 		return err
 	}
@@ -309,9 +322,52 @@ func (p *Playlists) sort(ctx context.Context, id string, report Report) error {
 
 	// Append the rest of the 100-chunk batches to the bottom
 	rest := uris[len(first):]
-	return addAll(ctx, p.api, id, rest, func(done, _ int, msg string) {
-		report(len(first)+done, len(uris), msg)
+	// The playlist was already truncated to `first`, so finishing must survive cancellation
+	err = p.finishWrite(ctx, id, rest, func(added int) {
+		report(len(first)+added, len(uris), "writing sorted order")
 	})
+	if err != nil {
+		return fmt.Errorf("appending sorted tracks, restore from backup %s: %v", backupName, err)
+	}
+
+	return nil
+}
+
+const (
+	finishTimeout = 2 * time.Minute
+	finishRetries = 3
+)
+
+// finishWrite appends uris after a destructive step has already succeeded
+// It ignores cancellation of ctx (but keeps its values), bounded by finishTimeout, and retries each chunk
+func (p *Playlists) finishWrite(ctx context.Context, id string, uris []string, progress func(added int)) error {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), finishTimeout)
+	defer cancel()
+
+	added := 0
+	for chunk := range slices.Chunk(uris, spotify.MaxItemsPerRequest) {
+		var err error
+		for attempt := range finishRetries {
+			if _, err = p.api.AddItems(ctx, id, chunk, -1); err == nil {
+				break
+			}
+			if ctx.Err() != nil {
+				break
+			}
+			select {
+			case <-ctx.Done():
+			case <-time.After(time.Duration(attempt+1) * time.Second):
+			}
+		}
+		if err != nil {
+			return fmt.Errorf("add items: %w", err)
+		}
+
+		added += len(chunk)
+		progress(added)
+	}
+
+	return nil
 }
 
 func primaryArtist(t *spotify.Track) string {
@@ -322,8 +378,9 @@ func primaryArtist(t *spotify.Track) string {
 	return strings.ToLower(t.Artists[0].Name)
 }
 
-func validID(id string) bool {
-	if id == "" {
+// ValidID reports whether id looks like a Spotify playlist ID: 22 base62 characters
+func ValidID(id string) bool {
+	if len(id) != 22 {
 		return false
 	}
 
