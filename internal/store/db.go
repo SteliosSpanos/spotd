@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 
 	_ "modernc.org/sqlite"
 )
@@ -45,6 +46,15 @@ type DB struct {
 }
 
 func Open(ctx context.Context, path string) (_ *DB, err error) {
+	// SQLite would create the file with the umask default (usually 0644), so create it with strict 0600 permissions before handling it over to SQLite
+	if path != ":memory:" {
+		f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
+		if err != nil {
+			return nil, fmt.Errorf("create database file: %w", err)
+		}
+		f.Close()
+	}
+
 	w, err := sql.Open("sqlite", dsn(path, false))
 	if err != nil {
 		return nil, err
