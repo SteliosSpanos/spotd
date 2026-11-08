@@ -22,8 +22,8 @@ ON CONFLICT (track_id, artist_id) DO UPDATE SET
 DELETE FROM track_artists WHERE track_id = ?;
 
 -- name: InsertPlay :execrows
-INSERT INTO plays (played_at_ms, track_id, context_uri)
-VALUES (?, ?, ?)
+INSERT INTO plays (played_at_ms, track_id)
+VALUES (?, ?)
 ON CONFLICT (played_at_ms) DO NOTHING;
 
 -- name: LatestPlayedAt :one
